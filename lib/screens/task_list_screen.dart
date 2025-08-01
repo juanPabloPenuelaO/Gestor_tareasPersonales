@@ -12,6 +12,7 @@ class TaskListScreen extends StatefulWidget {
 class _TaskListScreenState extends State<TaskListScreen> {
   final ScrollController _scrollController = ScrollController();
   List<Task> _tasks = [];
+  TaskCategory? _selectedCategory;
 
   @override
   void initState() {
@@ -33,12 +34,13 @@ class _TaskListScreenState extends State<TaskListScreen> {
     await prefs.setStringList('tasks', tasksJson);
   }
 
-  void _addTask(String title, String description, bool isPriority, {DateTime? startDate, DateTime? dueDate}) {
+  void _addTask(String title, String description, bool isPriority, TaskCategory category, {DateTime? startDate, DateTime? dueDate}) {
     setState(() {
       _tasks.add(Task(
         title: title,
         description: description,
         isPriority: isPriority,
+        category: category,
         startDate: startDate,
         dueDate: dueDate,
       ));
@@ -68,6 +70,52 @@ class _TaskListScreenState extends State<TaskListScreen> {
     _saveTasks();
   }
 
+  String _categoryToString(TaskCategory category) {
+    switch (category) {
+      case TaskCategory.trabajo:
+        return 'Trabajo';
+      case TaskCategory.personal:
+        return 'Personal';
+      case TaskCategory.musica:
+        return 'Música';
+      case TaskCategory.universidad:
+        return 'Universidad';
+    }
+  }
+
+  Color _getCategoryColor(TaskCategory category) {
+    switch (category) {
+      case TaskCategory.trabajo:
+        return Colors.blue;
+      case TaskCategory.personal:
+        return Colors.green;
+      case TaskCategory.musica:
+        return Colors.purple;
+      case TaskCategory.universidad:
+        return Colors.orange;
+    }
+  }
+
+  IconData _getCategoryIcon(TaskCategory category) {
+    switch (category) {
+      case TaskCategory.trabajo:
+        return Icons.work;
+      case TaskCategory.personal:
+        return Icons.person;
+      case TaskCategory.musica:
+        return Icons.music_note;
+      case TaskCategory.universidad:
+        return Icons.school;
+    }
+  }
+
+  List<Task> _getFilteredTasks() {
+    if (_selectedCategory == null) {
+      return _tasks;
+    }
+    return _tasks.where((task) => task.category == _selectedCategory).toList();
+  }
+
   void _editTask(int index) {
     final task = _tasks[index];
     String editedTitle = task.title;
@@ -75,6 +123,7 @@ class _TaskListScreenState extends State<TaskListScreen> {
     bool isPriority = task.isPriority;
     DateTime? startDate = task.startDate;
     DateTime? dueDate = task.dueDate;
+    TaskCategory selectedCategory = task.category;
 
     showDialog(
       context: context,
@@ -136,6 +185,40 @@ class _TaskListScreenState extends State<TaskListScreen> {
                         ),
                         controller: TextEditingController(text: editedDesc),
                         onChanged: (value) => editedDesc = value,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Colors.indigo.shade50,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.indigo.shade200),
+                      ),
+                      child: ListTile(
+                        leading: Icon(_getCategoryIcon(selectedCategory), color: _getCategoryColor(selectedCategory)),
+                        title: Text('Categoría: ${_categoryToString(selectedCategory)}'),
+                        trailing: const Icon(Icons.arrow_drop_down),
+                        onTap: () {
+                          showDialog(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              title: const Text('Seleccionar Categoría'),
+                              content: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: TaskCategory.values.map((category) {
+                                  return ListTile(
+                                    leading: Icon(_getCategoryIcon(category), color: _getCategoryColor(category)),
+                                    title: Text(_categoryToString(category)),
+                                    onTap: () {
+                                      setState(() => selectedCategory = category);
+                                      Navigator.pop(context);
+                                    },
+                                  );
+                                }).toList(),
+                              ),
+                            ),
+                          );
+                        },
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -242,6 +325,7 @@ class _TaskListScreenState extends State<TaskListScreen> {
                           _tasks[index].isPriority = isPriority;
                           _tasks[index].startDate = startDate;
                           _tasks[index].dueDate = dueDate;
+                          _tasks[index].category = selectedCategory;
                           
                           // Reordenar las tareas (prioritarias primero)
                           _tasks.sort((a, b) {
@@ -277,6 +361,7 @@ class _TaskListScreenState extends State<TaskListScreen> {
     bool isPriority = false;
     DateTime? startDate;
     DateTime? dueDate;
+    TaskCategory selectedCategory = TaskCategory.personal;
 
     showDialog(
       context: context,
@@ -336,6 +421,40 @@ class _TaskListScreenState extends State<TaskListScreen> {
                           labelStyle: TextStyle(color: Colors.grey),
                         ),
                         onChanged: (value) => newDesc = value,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Colors.indigo.shade50,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.indigo.shade200),
+                      ),
+                      child: ListTile(
+                        leading: Icon(_getCategoryIcon(selectedCategory), color: _getCategoryColor(selectedCategory)),
+                        title: Text('Categoría: ${_categoryToString(selectedCategory)}'),
+                        trailing: const Icon(Icons.arrow_drop_down),
+                        onTap: () {
+                          showDialog(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              title: const Text('Seleccionar Categoría'),
+                              content: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: TaskCategory.values.map((category) {
+                                  return ListTile(
+                                    leading: Icon(_getCategoryIcon(category), color: _getCategoryColor(category)),
+                                    title: Text(_categoryToString(category)),
+                                    onTap: () {
+                                      setState(() => selectedCategory = category);
+                                      Navigator.pop(context);
+                                    },
+                                  );
+                                }).toList(),
+                              ),
+                            ),
+                          );
+                        },
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -440,6 +559,7 @@ class _TaskListScreenState extends State<TaskListScreen> {
                           title: newTitle,
                           description: newDesc,
                           isPriority: isPriority,
+                          category: selectedCategory,
                           startDate: startDate,
                           dueDate: dueDate,
                         );
@@ -533,10 +653,9 @@ class _TaskListScreenState extends State<TaskListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final activeTasks =
-        _tasks.where((t) => t.status != TaskStatus.finalizado).toList();
-    final finishedTasks =
-        _tasks.where((t) => t.status == TaskStatus.finalizado).toList();
+    final filteredTasks = _getFilteredTasks();
+    final activeTasks = filteredTasks.where((t) => t.status != TaskStatus.finalizado).toList();
+    final finishedTasks = filteredTasks.where((t) => t.status == TaskStatus.finalizado).toList();
 
     return Scaffold(
       body: Container(
@@ -593,6 +712,119 @@ class _TaskListScreenState extends State<TaskListScreen> {
                   ],
                 ),
               ),
+              // Filtro de categorías
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        const Text(
+                          'Filtrar por:',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: Row(
+                              children: [
+                                // Botón "Todas"
+                                GestureDetector(
+                                  onTap: () {
+                                    setState(() {
+                                      _selectedCategory = null;
+                                    });
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                    decoration: BoxDecoration(
+                                      color: _selectedCategory == null 
+                                          ? Colors.white 
+                                          : Colors.white.withOpacity(0.3),
+                                      borderRadius: BorderRadius.circular(20),
+                                      border: Border.all(
+                                        color: Colors.white,
+                                        width: 1,
+                                      ),
+                                    ),
+                                    child: Text(
+                                      'Todas',
+                                      style: TextStyle(
+                                        color: _selectedCategory == null 
+                                            ? Colors.blue.shade800 
+                                            : Colors.white,
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                // Botones de categorías
+                                ...TaskCategory.values.map((category) {
+                                  final isSelected = _selectedCategory == category;
+                                  return Padding(
+                                    padding: const EdgeInsets.only(right: 8),
+                                    child: GestureDetector(
+                                      onTap: () {
+                                        setState(() {
+                                          _selectedCategory = isSelected ? null : category;
+                                        });
+                                      },
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                        decoration: BoxDecoration(
+                                          color: isSelected 
+                                              ? Colors.white 
+                                              : Colors.white.withOpacity(0.3),
+                                          borderRadius: BorderRadius.circular(20),
+                                          border: Border.all(
+                                            color: Colors.white,
+                                            width: 1,
+                                          ),
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(
+                                              _getCategoryIcon(category),
+                                              color: isSelected 
+                                                  ? _getCategoryColor(category)
+                                                  : Colors.white,
+                                              size: 16,
+                                            ),
+                                            const SizedBox(width: 4),
+                                            Text(
+                                              _categoryToString(category),
+                                              style: TextStyle(
+                                                color: isSelected 
+                                                    ? _getCategoryColor(category)
+                                                    : Colors.white,
+                                                fontWeight: FontWeight.w600,
+                                                fontSize: 12,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                }).toList(),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                  ],
+                ),
+              ),
               // Contenido principal
               Expanded(
                 child: Container(
@@ -622,7 +854,7 @@ class _TaskListScreenState extends State<TaskListScreen> {
                             _buildSectionHeader('Tareas Finalizadas', Icons.check_circle, Colors.green),
                             _buildTaskList(finishedTasks),
                           ],
-                          if (_tasks.isEmpty) ...[
+                          if (filteredTasks.isEmpty) ...[
                             const SizedBox(height: 50),
                             _buildEmptyState(),
                           ],
@@ -704,7 +936,9 @@ class _TaskListScreenState extends State<TaskListScreen> {
         ),
         const SizedBox(height: 20),
         Text(
-          'No hay tareas aún',
+          _selectedCategory == null 
+              ? 'No hay tareas aún'
+              : 'No hay tareas en la categoría "${_categoryToString(_selectedCategory!)}"',
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
@@ -713,7 +947,9 @@ class _TaskListScreenState extends State<TaskListScreen> {
         ),
         const SizedBox(height: 8),
         Text(
-          'Toca el botón + para agregar tu primera tarea',
+          _selectedCategory == null
+              ? 'Toca el botón + para agregar tu primera tarea'
+              : 'Toca el botón + para agregar una nueva tarea',
           style: TextStyle(
             fontSize: 14,
             color: Colors.grey.shade500,
@@ -811,17 +1047,44 @@ class _TaskListScreenState extends State<TaskListScreen> {
                         ),
                       ],
                       const SizedBox(height: 12),
-                      Row(
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
                         children: [
-                          if (task.startDate != null) ...[
+                          // Chip de categoría
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: _getCategoryColor(task.category).withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: _getCategoryColor(task.category).withOpacity(0.3)),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(_getCategoryIcon(task.category), color: _getCategoryColor(task.category), size: 14),
+                                const SizedBox(width: 4),
+                                Flexible(
+                                  child: Text(
+                                    _categoryToString(task.category),
+                                    style: TextStyle(
+                                      color: _getCategoryColor(task.category),
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          if (task.startDate != null)
                             _buildDateChip(
                               'Inicio',
                               task.startDate!,
                               Icons.calendar_today,
                               Colors.green,
                             ),
-                            const SizedBox(width: 8),
-                          ],
                           if (task.dueDate != null)
                             _buildDateChip(
                               'Finaliza',
@@ -989,12 +1252,15 @@ class _TaskListScreenState extends State<TaskListScreen> {
         children: [
           Icon(icon, color: color, size: 14),
           const SizedBox(width: 4),
-          Text(
-            '$label: ${date.toLocal().toString().split(' ')[0]}',
-            style: TextStyle(
-              color: color,
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
+          Flexible(
+            child: Text(
+              '$label: ${date.toLocal().toString().split(' ')[0]}',
+              style: TextStyle(
+                color: color,
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+              overflow: TextOverflow.ellipsis,
             ),
           ),
         ],

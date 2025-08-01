@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 enum TaskStatus { pendiente, enProceso, finalizado, detenido }
+enum TaskCategory { trabajo, personal, musica, universidad }
 
 class Task {
   String title;
@@ -9,6 +10,7 @@ class Task {
   bool isPriority;
   DateTime? startDate;
   DateTime? dueDate;
+  TaskCategory category;
 
   Task({
     required this.title,
@@ -17,6 +19,7 @@ class Task {
     this.isPriority = false,
     this.startDate,
     this.dueDate,
+    this.category = TaskCategory.personal,
   });
 
   Map<String, dynamic> toMap() {
@@ -27,6 +30,7 @@ class Task {
       'priority': isPriority,
       'startDate': startDate?.toIso8601String(),
       'dueDate': dueDate?.toIso8601String(),
+      'category': category.index,
     };
   }
 
@@ -38,6 +42,7 @@ class Task {
       isPriority: map['priority'] ?? false,
       startDate: map['startDate'] != null ? DateTime.parse(map['startDate']) : null,
       dueDate: map['dueDate'] != null ? DateTime.parse(map['dueDate']) : null,
+      category: map['category'] != null ? TaskCategory.values[map['category']] : TaskCategory.personal,
     );
   }
 
