@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/task.dart';
+import 'time_management_screen.dart'; // Added import for TimeManagementScreen
 
 class TaskListScreen extends StatefulWidget {
   const TaskListScreen({super.key});
@@ -34,7 +35,7 @@ class _TaskListScreenState extends State<TaskListScreen> {
     await prefs.setStringList('tasks', tasksJson);
   }
 
-  void _addTask(String title, String description, bool isPriority, TaskCategory category, {DateTime? startDate, DateTime? dueDate}) {
+  void _addTask(String title, String description, bool isPriority, TaskCategory category, {DateTime? startDate, DateTime? dueDate, int estimatedMinutes = 0}) {
     setState(() {
       _tasks.add(Task(
         title: title,
@@ -43,6 +44,7 @@ class _TaskListScreenState extends State<TaskListScreen> {
         category: category,
         startDate: startDate,
         dueDate: dueDate,
+        estimatedMinutes: estimatedMinutes,
       ));
 
       _tasks.sort((a, b) {
@@ -362,6 +364,7 @@ class _TaskListScreenState extends State<TaskListScreen> {
     DateTime? startDate;
     DateTime? dueDate;
     TaskCategory selectedCategory = TaskCategory.personal;
+    int estimatedMinutes = 0;
 
     showDialog(
       context: context,
@@ -562,6 +565,7 @@ class _TaskListScreenState extends State<TaskListScreen> {
                           category: selectedCategory,
                           startDate: startDate,
                           dueDate: dueDate,
+                          estimatedMinutes: estimatedMinutes,
                         );
                         
                         // Cerrar el diálogo primero
@@ -669,44 +673,32 @@ class _TaskListScreenState extends State<TaskListScreen> {
         child: SafeArea(
           child: Column(
             children: [
-              // Header con gradiente
-              Container(
-                padding: const EdgeInsets.all(20),
+              // Título de la aplicación
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                 child: Row(
                   children: [
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
                         color: Colors.white.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(15),
+                        borderRadius: BorderRadius.circular(16),
                       ),
                       child: const Icon(
                         Icons.task_alt,
                         color: Colors.white,
-                        size: 30,
+                        size: 28,
                       ),
                     ),
-                    const SizedBox(width: 15),
+                    const SizedBox(width: 16),
                     const Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Gestor de Tareas',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          Text(
-                            'Organiza tu día de manera eficiente',
-                            style: TextStyle(
-                              color: Colors.white70,
-                              fontSize: 14,
-                            ),
-                          ),
-                        ],
+                      child: Text(
+                        'Gestión de tareas personales',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                   ],
@@ -869,27 +861,64 @@ class _TaskListScreenState extends State<TaskListScreen> {
           ),
         ),
       ),
-      floatingActionButton: Container(
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Colors.blue, Colors.blueAccent],
-          ),
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.blue.withOpacity(0.3),
-              blurRadius: 8,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: FloatingActionButton(
-          onPressed: _showAddTaskDialog,
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          child: const Icon(Icons.add, color: Colors.white, size: 28),
-        ),
-      ),
+             floatingActionButton: Row(
+         mainAxisAlignment: MainAxisAlignment.end,
+         children: [
+           // Botón de tiempo
+           Container(
+             margin: const EdgeInsets.only(right: 16),
+             decoration: BoxDecoration(
+               gradient: const LinearGradient(
+                 colors: [Colors.orange, Colors.orangeAccent],
+               ),
+               borderRadius: BorderRadius.circular(16),
+               boxShadow: [
+                 BoxShadow(
+                   color: Colors.orange.withOpacity(0.3),
+                   blurRadius: 8,
+                   offset: const Offset(0, 4),
+                 ),
+               ],
+             ),
+             child: FloatingActionButton(
+               onPressed: () async {
+                 await Navigator.push(
+                   context,
+                   MaterialPageRoute(
+                     builder: (_) => TimeManagementScreen(tasks: _tasks),
+                   ),
+                 );
+                 setState(() {}); // Refrescar al volver
+               },
+               backgroundColor: Colors.transparent,
+               elevation: 0,
+               child: const Icon(Icons.timer, color: Colors.white, size: 24),
+             ),
+           ),
+           // Botón de agregar
+           Container(
+             decoration: BoxDecoration(
+               gradient: const LinearGradient(
+                 colors: [Colors.blue, Colors.blueAccent],
+               ),
+               borderRadius: BorderRadius.circular(16),
+               boxShadow: [
+                 BoxShadow(
+                   color: Colors.blue.withOpacity(0.3),
+                   blurRadius: 8,
+                   offset: const Offset(0, 4),
+                 ),
+               ],
+             ),
+             child: FloatingActionButton(
+               onPressed: _showAddTaskDialog,
+               backgroundColor: Colors.transparent,
+               elevation: 0,
+               child: const Icon(Icons.add, color: Colors.white, size: 28),
+             ),
+           ),
+         ],
+       ),
     );
   }
 
@@ -1091,6 +1120,82 @@ class _TaskListScreenState extends State<TaskListScreen> {
                               task.dueDate!,
                               Icons.event,
                               Colors.purple,
+                            ),
+                          // NUEVO: Chip de estimación
+                          if (task.estimatedMinutes > 0)
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: Colors.teal.shade50,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: Colors.teal.shade200),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(Icons.timer, color: Colors.teal, size: 14),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    'Estimado: ${task.estimatedMinutes} min',
+                                    style: const TextStyle(
+                                      color: Colors.teal,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          // NUEVO: Chip de tiempo real dedicado
+                          if (task.actualMinutes > 0)
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: Colors.blue.shade50,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: Colors.blue.shade200),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(Icons.timelapse, color: Colors.blue, size: 14),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    'Real: ${task.actualMinutes} min',
+                                    style: const TextStyle(
+                                      color: Colors.blue,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          // NUEVO: Chip de eficiencia
+                          if (task.status == TaskStatus.finalizado && task.estimatedMinutes > 0)
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: (task.completedOnTime ? Colors.green.shade50 : Colors.orange.shade50),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: (task.completedOnTime ? Colors.green.shade200 : Colors.orange.shade200)),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    task.completedOnTime ? Icons.check_circle : Icons.warning,
+                                    color: task.completedOnTime ? Colors.green : Colors.orange,
+                                    size: 14,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    'Eficiencia: ${task.efficiency.toStringAsFixed(1)}%',
+                                    style: TextStyle(
+                                      color: task.completedOnTime ? Colors.green : Colors.orange,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                         ],
                       ),
